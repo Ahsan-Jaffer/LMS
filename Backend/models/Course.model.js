@@ -36,6 +36,7 @@ const courseSchema = new mongoose.Schema({
     price: {
         type: Number,
         required: true,
+        
     },
 
     thumbnail: {

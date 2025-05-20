@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 const sectionSchema = new mongoose.Schema({
     name: {
         type: String,
+        
     },
     subSection:{
         type: mongoose.Schema.Types.ObjectId,
