@@ -76,7 +76,7 @@ exports.sendOtp = async (req, res) => {
   }
 };
 
-// ************************************signup**************************************
+// ************************************Signup Controller**************************************
 
 exports.signup = async (req, res) => {
   try {
@@ -181,71 +181,71 @@ exports.signup = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
-    // get data request's body
-    const { email, password } = req.body;
-    //validate data
+    // Get email and password from request body
+    const { email, password } = req.body
+
+    // Check if email or password is missing
     if (!email || !password) {
-      return res.status(403).json({
+      // Return 400 Bad Request status code with error message
+      return res.status(400).json({
         success: false,
-        message: "All fields are required",
-      });
+        message: `Please Fill up All the Required Fields`,
+      })
     }
-    //user check exist or not
-    const user = await User.findOne({ email }).populate("additionalDetails");
+
+    // Find user with provided email
+    const user = await User.findOne({ email }).populate("additionalDetails")
+
+    // If user not found with provided email
     if (!user) {
-      return res.status(400).json({
+      // Return 401 Unauthorized status code with error message
+      return res.status(401).json({
         success: false,
-        message: "User does not exist. Please signup first.",
-      });
+        message: `User is not Registered with Us Please SignUp to Continue`,
+      })
     }
-    // generate JWT, after matching password
-    const isPasswordMatch = await bcrypt.compare(password, user.password);
-    if (!isPasswordMatch) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid credentials.",
-      });
-    }
-    // create JWT token
-    const token = jwt.sign(
-      { id: user._id, email: user.email, accountType:user.accountType },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "2h",
+
+    // Generate JWT token and Compare Password
+    if (await bcrypt.compare(password, user.password)) {
+      const token = jwt.sign(
+        { email: user.email, id: user._id, role: user.role },
+        process.env.JWT_SECRET,
+        {
+          expiresIn: "24h",
+        }
+      )
+
+      // Save token to user document in database
+      user.token = token
+      user.password = undefined
+      // Set cookie for token and return success response
+      const options = {
+        expires: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+        httpOnly: true,
       }
-    );
-
-    user.token = token;
-    user.password = undefined; // remove password from the response
-
-
-
-    //create cookie and send response
-    const options = {
-      expires: new Date(
-        Date.now() + 3 * 24 * 60 * 60 * 1000
-      ),
-      httpOnly: true,
-    };
-    res.cookie("token", token, options).status(200).json({
-      success: true,
-      message: "User logged in successfully",
-      user,
-      token
-    });
-
-
+      res.cookie("token", token, options).status(200).json({
+        success: true,
+        token,
+        user,
+        message: `User Login Success`,
+      })
+    } else {
+      return res.status(401).json({
+        success: false,
+        message: `Password is incorrect`,
+      })
+    }
   } catch (error) {
-    console.log(error);
+    console.error(error)
+    // Return 500 Internal Server Error status code with error message
     return res.status(500).json({
       success: false,
-      message: "Login Failure. Please try again.",
-    });
-    
+      message: `Login Failure Please Try Again`,
+    })
   }
 }
 
-//*******************************changePassword*************************
+//*******************************Controller for Chaning Password*************************
 
 exports.changePassword = async (req, res) => {
   try {
@@ -264,6 +264,7 @@ exports.changePassword = async (req, res) => {
         message: "New Password and Confirm Password do not match.",
       });
     }
+
     // get user from the token
     const user = await User.findById(req.user.id);
     // check if user exists
