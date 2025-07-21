@@ -1,2 +1,4 @@
 /Backend/.env
 /Backend/node_modules/
+/Frontend/node_modules
+/Frontend/README.md
